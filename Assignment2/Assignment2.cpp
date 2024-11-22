@@ -9,7 +9,6 @@
 
 using namespace std;
 
-// Record structure
 struct Record
 {
     int ID;
@@ -17,14 +16,11 @@ struct Record
     int Age;
 };
 
-// Binary Search Tree (BST) Implementation
 class BSTNode
 {
 public:
     Record data;
-    BSTNode *left;
-    BSTNode *right;
-
+    BSTNode *left, *right;
     BSTNode(Record rec) : data(rec), left(nullptr), right(nullptr) {}
 };
 
@@ -33,9 +29,9 @@ class BST
 private:
     BSTNode *root;
 
-    BSTNode *insertNode(BSTNode *node, Record rec)
+    BSTNode *insertNode(BSTNode *node, const Record &rec)
     {
-        if (node == nullptr)
+        if (!node)
             return new BSTNode(rec);
         if (rec.ID < node->data.ID)
             node->left = insertNode(node->left, rec);
@@ -44,13 +40,11 @@ private:
         return node;
     }
 
-    BSTNode *searchNode(BSTNode *node, int id)
+    BSTNode *searchNode(BSTNode *node, int id) const
     {
         if (!node || node->data.ID == id)
             return node;
-        if (id < node->data.ID)
-            return searchNode(node->left, id);
-        return searchNode(node->right, id);
+        return id < node->data.ID ? searchNode(node->left, id) : searchNode(node->right, id);
     }
 
     BSTNode *deleteNode(BSTNode *node, int id)
@@ -82,14 +76,14 @@ private:
         return node;
     }
 
-    BSTNode *findMin(BSTNode *node)
+    BSTNode *findMin(BSTNode *node) const
     {
         while (node && node->left)
             node = node->left;
         return node;
     }
 
-    void inOrder(BSTNode *node)
+    void inOrder(BSTNode *node) const
     {
         if (node)
         {
@@ -103,12 +97,12 @@ private:
 public:
     BST() : root(nullptr) {}
 
-    void insert(Record rec)
+    void insert(const Record &rec)
     {
         root = insertNode(root, rec);
     }
 
-    Record *search(int id)
+    const Record *search(int id) const
     {
         BSTNode *result = searchNode(root, id);
         return result ? &result->data : nullptr;
@@ -116,7 +110,7 @@ public:
 
     void update(int id, const string &newName, int newAge)
     {
-        Record *record = search(id);
+        Record *record = const_cast<Record *>(search(id));
         if (record)
         {
             record->Name = newName;
@@ -129,42 +123,28 @@ public:
         root = deleteNode(root, id);
     }
 
-    void display()
+    void display() const
     {
         inOrder(root);
     }
 };
 
-// AVL Tree Implementation
-// Similar to BST but with balancing logic
-// For brevity, AVL tree code is omitted here, but you can add the balancing rotations (left-right, right-left, etc.).
-
-// Dummy Data Generation
 vector<Record> generateData(int size)
 {
-    vector<Record> data;
-    for (int i = 1; i <= size; ++i)
+    vector<Record> data(size);
+    for (int i = 0; i < size; ++i)
     {
-        data.push_back({i, "Name_" + to_string(i), 20 + (i % 30)});
+        data[i] = {i + 1, "Name_" + to_string(i + 1), 20 + (i % 30)};
     }
-
-    // Use a random number generator
-    random_device rd;                     // Seed for random number generator
-    mt19937 g(rd());                      // Mersenne Twister random number generator
-    shuffle(data.begin(), data.end(), g); // Use std::shuffle
-
+    shuffle(data.begin(), data.end(), mt19937(random_device{}()));
     return data;
 }
 
-// Performance Testing
 void performanceTest(int dataSize)
 {
     vector<Record> data = generateData(dataSize);
-
     BST bst;
-    // AVL and B-Tree classes would be initialized here.
 
-    // Insert Performance
     auto start = chrono::high_resolution_clock::now();
     for (const auto &rec : data)
     {
@@ -175,27 +155,21 @@ void performanceTest(int dataSize)
          << chrono::duration_cast<chrono::milliseconds>(end - start).count()
          << " ms" << endl;
 
-    // Search Performance
     start = chrono::high_resolution_clock::now();
-    for (int i = 1; i <= 20; ++i)
+    for (int i = 0; i < 20; ++i)
     {
-        bst.search(i);
+        bst.search(i + 1);
     }
     end = chrono::high_resolution_clock::now();
     cout << "BST Search Time: "
          << chrono::duration_cast<chrono::milliseconds>(end - start).count()
          << " ms" << endl;
-
-    // Similarly, test Update and Delete.
 }
 
-// Main Function
 int main()
 {
-    int dataSize = 10000; // Change to 1000, 10,000, 50,000 as needed.
-
+    int dataSize = 10000;
     cout << "Performance Testing with " << dataSize << " records:" << endl;
     performanceTest(dataSize);
-
     return 0;
 }
