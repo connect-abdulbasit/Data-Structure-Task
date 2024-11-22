@@ -1,3 +1,0 @@
-sorting_algorithm = bubble_sort  
-search_algorithm = interpolation_search 
-threshold_size = 50 
