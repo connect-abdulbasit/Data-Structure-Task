@@ -345,10 +345,10 @@ public:
 class BTreeNode
 {
 public:
-    vector<Record> keys;          // Keys stored in this node
-    vector<BTreeNode *> children; // Pointers to child nodes
-    bool isLeaf;                  // True if this is a leaf node
-    int t;                        // Minimum degree
+    vector<Record> keys;
+    vector<BTreeNode *> children;
+    bool isLeaf;
+    int t;
 
     BTreeNode(int t, bool isLeaf) : t(t), isLeaf(isLeaf) {}
 
@@ -575,7 +575,7 @@ public:
 
         if (!child->isLeaf)
         {
-            for (int i = 0; i <= sibling->children.size(); ++i)
+            for (int i = 0; i < sibling->children.size(); ++i)
                 child->children.push_back(sibling->children[i]);
         }
 
@@ -585,7 +585,6 @@ public:
         delete sibling;
     }
 };
-
 class BTree
 {
 private:
@@ -658,7 +657,7 @@ public:
         }
     }
 
-    void display() const
+    void traverse()
     {
         if (root)
             root->traverse();
@@ -746,10 +745,10 @@ void performanceTestBTree(int degree)
         cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
 
         start = chrono::high_resolution_clock::now();
-        // for (int i = 0; i < size; ++i)
-        // {
-        //     bTree.remove(i + 1);
-        // }
+        for (int i = 0; i < size; ++i)
+        {
+            bTree.remove(i + 1);
+        }
         end = chrono::high_resolution_clock::now();
         cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count() << endl;
     }
