@@ -4,6 +4,7 @@
 #include <string>
 #include <algorithm>
 #include <queue>
+#include <iomanip>
 #include <map>
 #include <random>
 
@@ -397,6 +398,9 @@ public:
 void performanceTestBST()
 {
     vector<int> sizes = {1000, 10000, 50000};
+    cout << setw(24) << left << "Tree Type" << setw(20) << "Size" << setw(20) << "Insert Time (ms)" << setw(20) << "Search Time (ms)" << endl;
+    cout << "-----------------------------------------------------------------------------------------------" << endl;
+
     for (int size : sizes)
     {
         vector<Record> data = generateData(size);
@@ -408,9 +412,7 @@ void performanceTestBST()
             bst.insert(rec);
         }
         auto end = chrono::high_resolution_clock::now();
-        cout << "BST Insert Time for " << size << " records: "
-             << chrono::duration_cast<chrono::milliseconds>(end - start).count()
-             << " ms" << endl;
+        cout << setw(24) << left << "BST" << setw(20) << size << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
 
         start = chrono::high_resolution_clock::now();
         for (int i = 0; i < 20; ++i)
@@ -418,45 +420,16 @@ void performanceTestBST()
             bst.search(i + 1);
         }
         end = chrono::high_resolution_clock::now();
-        cout << "BST Search Time for 20 records in " << size << " size database:"
-             << chrono::duration_cast<chrono::milliseconds>(end - start).count()
-             << " ms" << endl;
-    }
-}
-
-void performanceTestAVL()
-{
-    vector<int> sizes = {1000, 10000, 50000};
-    for (int size : sizes)
-    {
-        vector<Record> data = generateData(size);
-        AVL avl;
-
-        auto start = chrono::high_resolution_clock::now();
-        for (const auto &rec : data)
-        {
-            avl.insert(rec);
-        }
-        auto end = chrono::high_resolution_clock::now();
-        cout << "AVL Insert Time for " << size << " records: "
-             << chrono::duration_cast<chrono::milliseconds>(end - start).count()
-             << " ms" << endl;
-
-        start = chrono::high_resolution_clock::now();
-        for (int i = 0; i < 20; ++i)
-        {
-            avl.search(i + 1);
-        }
-        end = chrono::high_resolution_clock::now();
-        cout << "AVL Search Time for 20 records in " << size << " size database:"
-             << chrono::duration_cast<chrono::milliseconds>(end - start).count()
-             << " ms" << endl;
+        cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count() << endl;
     }
 }
 
 void performanceTestBTree(int degree)
 {
     vector<int> sizes = {1000, 10000, 50000};
+    cout << setw(24) << left << "Tree Type" << setw(20) << "Size" << setw(20) << "Insert Time (ms)" << setw(20) << "Search Time (ms)" << endl;
+    cout << "-----------------------------------------------------------------------------------------------" << endl;
+
     for (int size : sizes)
     {
         vector<Record> data = generateData(size);
@@ -468,9 +441,7 @@ void performanceTestBTree(int degree)
             bTree.insert(rec);
         }
         auto end = chrono::high_resolution_clock::now();
-        cout << "B-Tree Insert Time for " << size << " records: "
-             << chrono::duration_cast<chrono::milliseconds>(end - start).count()
-             << " ms" << endl;
+        cout << setw(24) << left << "B-Tree" << setw(20) << size << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
 
         start = chrono::high_resolution_clock::now();
         for (int i = 0; i < 20; ++i)
@@ -478,16 +449,43 @@ void performanceTestBTree(int degree)
             bTree.search(i + 1);
         }
         end = chrono::high_resolution_clock::now();
-        cout << "B-Tree Search Time for 20 records in " << size << " size database: "
-             << chrono::duration_cast<chrono::milliseconds>(end - start).count()
-             << " ms" << endl;
+        cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count() << endl;
+    }
+}
+
+void performanceTestAVL()
+{
+    vector<int> sizes = {1000, 10000, 50000};
+    cout << setw(24) << left << "Tree Type" << setw(20) << "Size" << setw(20) << "Insert Time (ms)" << setw(20) << "Search Time (ms)" << endl;
+    cout << "-----------------------------------------------------------------------------------------------" << endl;
+    for (int size : sizes)
+    {
+        vector<Record> data = generateData(size);
+        AVL avl;
+
+        auto start = chrono::high_resolution_clock::now();
+        for (const auto &rec : data)
+        {
+            avl.insert(rec);
+        }
+        auto end = chrono::high_resolution_clock::now();
+        cout << setw(24) << left << "AVL" << setw(20) << size << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
+
+        start = chrono::high_resolution_clock::now();
+        for (int i = 0; i < 20; ++i)
+        {
+            avl.search(i + 1);
+        }
+        end = chrono::high_resolution_clock::now();
+        cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count() << endl;
     }
 }
 int main()
 {
     int bTreeDegree = 3;
 
-    cout << "Performance Testing" << endl;
+    cout << "Performance Testing of Different Tree Data Structures with Various Database Sizes" << endl;
+    cout << "=====================================================================================" << endl;
 
     cout << "\nTesting BST:" << endl;
     performanceTestBST();
