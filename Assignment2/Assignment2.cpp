@@ -231,6 +231,72 @@ private:
         return id < node->data.ID ? searchNode(node->left, id) : searchNode(node->right, id);
     }
 
+    AVLNode *deleteNode(AVLNode *node, int id)
+    {
+        if (!node)
+            return nullptr;
+
+        if (id < node->data.ID)
+            node->left = deleteNode(node->left, id);
+        else if (id > node->data.ID)
+            node->right = deleteNode(node->right, id);
+        else
+        {
+            if (!node->left || !node->right)
+            {
+                AVLNode *temp = node->left ? node->left : node->right;
+                if (!temp)
+                {
+                    temp = node;
+                    node = nullptr;
+                }
+                else
+                    *node = *temp;
+                delete temp;
+            }
+            else
+            {
+                AVLNode *temp = findMin(node->right);
+                node->data = temp->data;
+                node->right = deleteNode(node->right, temp->data.ID);
+            }
+        }
+
+        if (!node)
+            return node;
+
+        node->height = 1 + max(getHeight(node->left), getHeight(node->right));
+        int balance = getBalance(node);
+
+        if (balance > 1 && getBalance(node->left) >= 0)
+            return rotateRight(node);
+
+        if (balance > 1 && getBalance(node->left) < 0)
+        {
+            node->left = rotateLeft(node->left);
+            return rotateRight(node);
+        }
+
+        if (balance < -1 && getBalance(node->right) <= 0)
+            return rotateLeft(node);
+
+        if (balance < -1 && getBalance(node->right) > 0)
+        {
+            node->right = rotateRight(node->right);
+            return rotateLeft(node);
+        }
+
+        return node;
+    }
+
+    AVLNode *findMin(AVLNode *node) const
+    {
+        AVLNode *current = node;
+        while (current->left != nullptr)
+            current = current->left;
+        return current;
+    }
+
     void inOrder(AVLNode *node) const
     {
         if (node)
@@ -254,6 +320,21 @@ public:
     {
         AVLNode *result = searchNode(root, id);
         return result ? &result->data : nullptr;
+    }
+
+    void update(int id, const string &newName, int newAge)
+    {
+        AVLNode *node = searchNode(root, id);
+        if (node)
+        {
+            node->data.Name = newName;
+            node->data.Age = newAge;
+        }
+    }
+
+    void remove(int id)
+    {
+        root = deleteNode(root, id);
     }
 
     void display() const
@@ -352,6 +433,157 @@ public:
         children.insert(children.begin() + i + 1, z);
         keys.insert(keys.begin() + i, y->keys[t - 1]);
     }
+
+    void remove(int id)
+    {
+        int idx = findKey(id);
+
+        if (idx < keys.size() && keys[idx].ID == id)
+        {
+            if (isLeaf)
+                removeFromLeaf(idx);
+            else
+                removeFromNonLeaf(idx);
+        }
+        else
+        {
+            if (isLeaf)
+                return;
+
+            bool flag = (idx == keys.size());
+
+            if (children[idx]->keys.size() < t)
+                fill(idx);
+
+            if (flag && idx > keys.size())
+                children[idx - 1]->remove(id);
+            else
+                children[idx]->remove(id);
+        }
+    }
+
+    int findKey(int id)
+    {
+        int idx = 0;
+        while (idx < keys.size() && keys[idx].ID < id)
+            ++idx;
+        return idx;
+    }
+
+    void removeFromLeaf(int idx)
+    {
+        keys.erase(keys.begin() + idx);
+    }
+
+    void removeFromNonLeaf(int idx)
+    {
+        Record k = keys[idx];
+
+        if (children[idx]->keys.size() >= t)
+        {
+            Record pred = getPred(idx);
+            keys[idx] = pred;
+            children[idx]->remove(pred.ID);
+        }
+        else if (children[idx + 1]->keys.size() >= t)
+        {
+            Record succ = getSucc(idx);
+            keys[idx] = succ;
+            children[idx + 1]->remove(succ.ID);
+        }
+        else
+        {
+            merge(idx);
+            children[idx]->remove(k.ID);
+        }
+    }
+
+    Record getPred(int idx)
+    {
+        BTreeNode *cur = children[idx];
+        while (!cur->isLeaf)
+            cur = cur->children[cur->keys.size()];
+        return cur->keys.back();
+    }
+
+    Record getSucc(int idx)
+    {
+        BTreeNode *cur = children[idx + 1];
+        while (!cur->isLeaf)
+            cur = cur->children[0];
+        return cur->keys.front();
+    }
+
+    void fill(int idx)
+    {
+        if (idx != 0 && children[idx - 1]->keys.size() >= t)
+            borrowFromPrev(idx);
+        else if (idx != keys.size() && children[idx + 1]->keys.size() >= t)
+            borrowFromNext(idx);
+        else
+        {
+            if (idx != keys.size())
+                merge(idx);
+            else
+                merge(idx - 1);
+        }
+    }
+
+    void borrowFromPrev(int idx)
+    {
+        BTreeNode *child = children[idx];
+        BTreeNode *sibling = children[idx - 1];
+
+        child->keys.insert(child->keys.begin(), keys[idx - 1]);
+
+        if (!child->isLeaf)
+            child->children.insert(child->children.begin(), sibling->children.back());
+
+        keys[idx - 1] = sibling->keys.back();
+        sibling->keys.pop_back();
+
+        if (!sibling->isLeaf)
+            sibling->children.pop_back();
+    }
+
+    void borrowFromNext(int idx)
+    {
+        BTreeNode *child = children[idx];
+        BTreeNode *sibling = children[idx + 1];
+
+        child->keys.push_back(keys[idx]);
+
+        if (!child->isLeaf)
+            child->children.push_back(sibling->children.front());
+
+        keys[idx] = sibling->keys.front();
+        sibling->keys.erase(sibling->keys.begin());
+
+        if (!sibling->isLeaf)
+            sibling->children.erase(sibling->children.begin());
+    }
+
+    void merge(int idx)
+    {
+        BTreeNode *child = children[idx];
+        BTreeNode *sibling = children[idx + 1];
+
+        child->keys.push_back(keys[idx]);
+
+        for (int i = 0; i < sibling->keys.size(); ++i)
+            child->keys.push_back(sibling->keys[i]);
+
+        if (!child->isLeaf)
+        {
+            for (int i = 0; i <= sibling->children.size(); ++i)
+                child->children.push_back(sibling->children[i]);
+        }
+
+        keys.erase(keys.begin() + idx);
+        children.erase(children.begin() + idx + 1);
+
+        delete sibling;
+    }
 };
 
 class BTree
@@ -383,12 +615,49 @@ public:
         }
     }
 
-    const BTreeNode *search(int id) const
+    BTreeNode *search(int id) const
     {
         if (!root)
             return nullptr;
         return root->search(id);
     }
+
+    void update(int id, string name, int age)
+    {
+        BTreeNode *node = search(id);
+        if (node)
+        {
+            for (auto &key : node->keys)
+            {
+                if (key.ID == id)
+                {
+                    key.Name = name;
+                    key.Age = age;
+                    break;
+                }
+            }
+        }
+    }
+
+    void remove(int id)
+    {
+        if (!root)
+            return;
+
+        root->remove(id);
+
+        if (root->keys.empty())
+        {
+            BTreeNode *tmp = root;
+            if (root->isLeaf)
+                root = nullptr;
+            else
+                root = root->children[0];
+
+            delete tmp;
+        }
+    }
+
     void display() const
     {
         if (root)
@@ -398,8 +667,8 @@ public:
 void performanceTestBST()
 {
     vector<int> sizes = {1000, 10000, 50000};
-    cout << setw(24) << left << "Tree Type" << setw(20) << "Size" << setw(20) << "Insert Time (ms)" << setw(20) << "Search Time (ms)" << endl;
-    cout << "-----------------------------------------------------------------------------------------------" << endl;
+    cout << setw(24) << left << "Tree Type" << setw(20) << "Size" << setw(20) << "Insert Time (ms)" << setw(20) << "Search Time (ms)" << setw(20) << "Update Time(ms)" << setw(20) << "Delete Time (ms)" << endl;
+    cout << "-------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
 
     for (int size : sizes)
     {
@@ -415,9 +684,26 @@ void performanceTestBST()
         cout << setw(24) << left << "BST" << setw(20) << size << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
 
         start = chrono::high_resolution_clock::now();
-        for (int i = 0; i < 20; ++i)
+        for (int i = 0; i < size; ++i)
         {
             bst.search(i + 1);
+        }
+        end = chrono::high_resolution_clock::now();
+        cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
+
+        start = chrono::high_resolution_clock::now();
+        for (int i = 0; i < size; ++i)
+        {
+            bst.update(i + 1, "update", i + 1 % 100);
+        }
+        end = chrono::high_resolution_clock::now();
+        cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
+
+        start = chrono::high_resolution_clock::now();
+        for (int i = 0; i < size; ++i)
+        {
+
+            bst.remove(i + 1);
         }
         end = chrono::high_resolution_clock::now();
         cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count() << endl;
@@ -427,8 +713,8 @@ void performanceTestBST()
 void performanceTestBTree(int degree)
 {
     vector<int> sizes = {1000, 10000, 50000};
-    cout << setw(24) << left << "Tree Type" << setw(20) << "Size" << setw(20) << "Insert Time (ms)" << setw(20) << "Search Time (ms)" << endl;
-    cout << "-----------------------------------------------------------------------------------------------" << endl;
+    cout << setw(24) << left << "Tree Type" << setw(20) << "Size" << setw(20) << "Insert Time (ms)" << setw(20) << "Search Time (ms)" << setw(20) << "Update Time (ms)" << setw(20) << "Delete Time (ms)" << endl;
+    cout << "-------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
 
     for (int size : sizes)
     {
@@ -444,10 +730,26 @@ void performanceTestBTree(int degree)
         cout << setw(24) << left << "B-Tree" << setw(20) << size << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
 
         start = chrono::high_resolution_clock::now();
-        for (int i = 0; i < 20; ++i)
+        for (int i = 0; i < size; ++i)
         {
             bTree.search(i + 1);
         }
+        end = chrono::high_resolution_clock::now();
+        cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
+
+        start = chrono::high_resolution_clock::now();
+        for (int i = 0; i < size; ++i)
+        {
+            bTree.update(i + 1, "update", i + 1 % 100);
+        }
+        end = chrono::high_resolution_clock::now();
+        cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
+
+        start = chrono::high_resolution_clock::now();
+        // for (int i = 0; i < size; ++i)
+        // {
+        //     bTree.remove(i + 1);
+        // }
         end = chrono::high_resolution_clock::now();
         cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count() << endl;
     }
@@ -456,8 +758,9 @@ void performanceTestBTree(int degree)
 void performanceTestAVL()
 {
     vector<int> sizes = {1000, 10000, 50000};
-    cout << setw(24) << left << "Tree Type" << setw(20) << "Size" << setw(20) << "Insert Time (ms)" << setw(20) << "Search Time (ms)" << endl;
-    cout << "-----------------------------------------------------------------------------------------------" << endl;
+    cout << setw(24) << left << "Tree Type" << setw(20) << "Size" << setw(20) << "Insert Time (ms)" << setw(20) << "Search Time (ms)" << setw(20) << "Update Time (ms)" << setw(20) << "Delete Time (ms)" << endl;
+    cout << "-------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
+
     for (int size : sizes)
     {
         vector<Record> data = generateData(size);
@@ -472,16 +775,34 @@ void performanceTestAVL()
         cout << setw(24) << left << "AVL" << setw(20) << size << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
 
         start = chrono::high_resolution_clock::now();
-        for (int i = 0; i < 20; ++i)
+        for (int i = 0; i < size; ++i)
         {
             avl.search(i + 1);
+        }
+        end = chrono::high_resolution_clock::now();
+        cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
+
+        start = chrono::high_resolution_clock::now();
+        for (int i = 0; i < size; ++i)
+        {
+            avl.update(i + 1, "update", i + 1 % 100);
+        }
+        end = chrono::high_resolution_clock::now();
+        cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count();
+
+        start = chrono::high_resolution_clock::now();
+        for (int i = 0; i < size; ++i)
+        {
+            avl.remove(i + 1);
         }
         end = chrono::high_resolution_clock::now();
         cout << setw(20) << chrono::duration_cast<chrono::milliseconds>(end - start).count() << endl;
     }
 }
+
 int main()
 {
+
     int bTreeDegree = 3;
 
     cout << "Performance Testing of Different Tree Data Structures with Various Database Sizes" << endl;
