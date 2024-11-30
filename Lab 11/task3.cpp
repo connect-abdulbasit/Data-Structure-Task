@@ -23,26 +23,33 @@ void checkLoad(){
     double load=((double)numberOfStudents/size);
     if(load>loadFactor){ 
      Student **newTable = new Student*[size*2];
-     for(int i=0;i<size*2;i++){
+     int oldSize = size;
+     size = size*2;
+     for(int i=0;i<size;i++){
         newTable[i] = NULL;
      }
-     for(int i=0;i<size;i++){
-       
-           int index = hashFunction(table[i]->id);
-    int startIndex = index;
+     for(int i=0;i<oldSize;i++){
+       if(table[i]==NULL) {
+       continue;
+       }
+    int index = hashFunction(table[i]->id);
+
     while(newTable[index]!=NULL){
-        index = (index+1)%size;
+        index = hashFunction(index+1);
+      
     }
+
     newTable[index] = new Student(table[i]->id,table[i]->name);
+       
         
      }
      delete[] table;
      table = newTable;
-     size = size*2;
+     
     }
 }
 public:
-HashTable(int size,int loadFactor){
+HashTable(int size,double loadFactor){
     this->size = size;
     numberOfStudents=0;
     this->loadFactor = loadFactor;
@@ -102,12 +109,18 @@ int main()
     table.insert(52, "Student 52");
     table.insert(62, "Student 62");
 
+cout<<"After insertion"<<endl;
+    table.display();
+
+cout<<"\n\nSearching Students\n";
     table.search(22);
     table.search(42);
     table.search(72);
 
     table.insert(72, "Student 72");
     table.insert(82, "Student 82");
+
+    cout<<"\n\nAfter insertion"<<endl;
 
     table.display();
 
