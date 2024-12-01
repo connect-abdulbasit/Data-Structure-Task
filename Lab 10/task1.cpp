@@ -37,10 +37,19 @@ public:
         }
         else if (val > arr[0])
         {
-            // Replace the root and reheapify
             arr[0] = val;
             heapify(0);
         }
+    }
+
+    void deleteFromHeap(){
+        if(cur==0){ 
+        return;
+        }
+
+        swap(arr[0],arr[cur-1]);
+        cur--;
+        heapify(0);
     }
 
     void heapify(int i)
@@ -49,11 +58,11 @@ public:
         int left = 2 * i + 1;
         int right = 2 * i + 2;
 
-        if (left > cur && arr[left] > arr[largest])
+        if (left < cur && arr[left] > arr[largest])
         {
             largest = left;
         }
-        if (right > cur && arr[right] > arr[largest])
+        if (right < cur && arr[right] > arr[largest])
         {
             largest = right;
         }
