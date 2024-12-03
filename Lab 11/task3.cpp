@@ -22,6 +22,21 @@ int hashFunction(int id){
 void checkLoad(){
     double load=((double)numberOfStudents/size);
     if(load>loadFactor){ 
+        int newSize = size*2;
+        while(!isPrime(newSize)){
+            newSize++;
+        }
+        Student **newTable = new Student*[newSize];
+        int oldSize = size;
+        size = newSize;
+        for(int i=0;i<size;i++){
+            newTable[i] = NULL;
+        }
+        for(int i=0;i<oldSize;i++){
+            if(table[i]==NULL) {
+                continue;
+            }
+            int index = hashFunction(table[i]->id);
      Student **newTable = new Student*[size*2];
      int oldSize = size;
      size = size*2;
@@ -36,17 +51,21 @@ void checkLoad(){
 
     while(newTable[index]!=NULL){
         index = hashFunction(index+1);
-      
     }
-
-    newTable[index] = new Student(table[i]->id,table[i]->name);
-       
-        
+    newTable[index] = new Student(table[i]->id,table[i]->name);        
      }
      delete[] table;
      table = newTable;
      
     }
+}
+bool isPrime(int n){
+    for(int i=2;i*i<=n;i++){
+        if(n%i==0){
+            return false;
+        }
+    }
+    return true;
 }
 public:
 HashTable(int size,double loadFactor){
